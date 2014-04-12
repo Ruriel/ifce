@@ -201,6 +201,43 @@ final class HttpRequest implements Runnable
 			error.close();
 		}
 	}
+	
+	private void head(String fileName, DataOutputStream os) throws Exception
+	{
+		boolean fileExists = true;
+		FileInputStream fis = null;
+		String statusLine = null;
+		String contentTypeLine = null;
+		if(fileName.equals("/"))
+			fileName = ROOT+"index.html";
+		else
+			fileName = ROOT+fileName;
+	
+		try
+		{
+			fis = new FileInputStream(fileName);
+		}
+		catch(FileNotFoundException e)
+		{
+			fileExists = false;
+		}
+		
+		if(fileExists)
+		{
+			statusLine = response(200);
+			contentTypeLine = "Content type: "+
+					contentType(fileName) + CRLF;
+		}
+		else
+		{
+			statusLine = response(404);
+			contentTypeLine = "Content type: text/html"+CRLF;
+		}
+		os.writeBytes(statusLine);
+		os.writeBytes(contentTypeLine);
+		os.writeBytes(CRLF);
+	}
+	
 	private void processRequest() throws Exception
 	{
 		
@@ -220,10 +257,15 @@ final class HttpRequest implements Runnable
 			tokens = new StringTokenizer(requestLine);
 			
 			firstToken = tokens.nextToken();
-			if(firstToken.equals("GET"));
+			if(firstToken.equals("GET"))
 			{
 				String fileName = tokens.nextToken();
 				get(fileName, os);
+			}
+			if(firstToken.equals("HEAD"))
+			{
+				String fileName = tokens.nextToken();
+				head(fileName, os);
 			}
 		}
 		System.out.println(requestLine);
