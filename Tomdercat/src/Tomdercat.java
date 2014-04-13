@@ -1,5 +1,6 @@
 import java.io.* ; 
 import java.net.* ; 
+import java.text.DateFormat;
 import java.util.* ;
 
 public final class Tomdercat 
@@ -25,8 +26,10 @@ final class HttpRequest implements Runnable
 	final static String CRLF = "\r\n";
 	final static String ROOT = "C://Users//Ruriel//Dropbox//workspace//ifce//Tomdercat//html//";
 	Socket socket;
+	boolean fileExists = true;
+	FileInputStream fis = null;
 	
-	private String response(int x)
+	private String status(int x)
 	{
 		String response = "HTTP/1.1 "+x+" ";
 		switch(x)
@@ -155,59 +158,18 @@ final class HttpRequest implements Runnable
 		this.socket = socket;
 	}
 	
-	private void get(String fileName, DataOutputStream os) throws Exception
+	private String headerResponse(int x, String fileName)
 	{
-		boolean fileExists = true;
-		FileInputStream fis = null;
-		String statusLine = null;
-		String contentTypeLine = null;
-		if(fileName.equals("/"))
-			fileName = ROOT+"index.html";
-		else
-			fileName = ROOT+fileName;
-	
-		try
-		{
-			fis = new FileInputStream(fileName);
-		}
-		catch(FileNotFoundException e)
-		{
-			fileExists = false;
-		}
-		
-		if(fileExists)
-		{
-			statusLine = response(200);
-			contentTypeLine = "Content type: "+
-					contentType(fileName) + CRLF;
-		}
-		else
-		{
-			statusLine = response(404);
-			contentTypeLine = "Content type: text/html"+CRLF;
-		}
-		os.writeBytes(statusLine);
-		os.writeBytes(contentTypeLine);
-		os.writeBytes(CRLF);
-		if(fileExists)
-		{
-			sendBytes(fis, os);
-			fis.close();
-		}
-		else
-		{
-			FileInputStream error = new FileInputStream(ROOT+"error.html");
-			sendBytes(error, os);
-			error.close();
-		}
+		String statusLine = status(x);
+		String dateLine = "Date: "+ new Date()+CRLF;
+		String serverLine = "Server: Tomdercat 1.0"+CRLF;
+		String contentTypeLine = "Content type: "+ contentType(fileName) + CRLF;
+		return statusLine+dateLine+serverLine+contentTypeLine+CRLF;
 	}
 	
-	private void head(String fileName, DataOutputStream os) throws Exception
+	private String getOrHead(String fileName) throws Exception
 	{
-		boolean fileExists = true;
-		FileInputStream fis = null;
-		String statusLine = null;
-		String contentTypeLine = null;
+		String response = null;
 		if(fileName.equals("/"))
 			fileName = ROOT+"index.html";
 		else
@@ -221,21 +183,20 @@ final class HttpRequest implements Runnable
 		{
 			fileExists = false;
 		}
-		
 		if(fileExists)
-		{
-			statusLine = response(200);
-			contentTypeLine = "Content type: "+
-					contentType(fileName) + CRLF;
-		}
+			response = headerResponse(200, fileName);
 		else
-		{
-			statusLine = response(404);
-			contentTypeLine = "Content type: text/html"+CRLF;
-		}
-		os.writeBytes(statusLine);
-		os.writeBytes(contentTypeLine);
-		os.writeBytes(CRLF);
+			response = headerResponse(404, "error.html");
+		return response;
+	}
+	
+	private String trace(String echo)
+	{
+		String statusLine = status(200);
+		String dateLine = "Date: "+ new Date()+CRLF;
+		String serverLine = "Server: Tomdercat 1.0"+CRLF;
+		String contentTypeLine = "Content type: message/http" + CRLF;
+		return statusLine+dateLine+serverLine+contentTypeLine+CRLF+echo;
 	}
 	
 	private void processRequest() throws Exception
@@ -250,22 +211,40 @@ final class HttpRequest implements Runnable
 		String headerLine = null;
 		String requestLine = br.readLine();
 		String firstToken = null;
-		
+		String responseToClient = null;
 		StringTokenizer tokens = null;
 		if(requestLine != null)
 		{
 			tokens = new StringTokenizer(requestLine);
 			
 			firstToken = tokens.nextToken();
-			if(firstToken.equals("GET"))
+			if(firstToken.equals("GET") || firstToken.equals("HEAD"))
 			{
 				String fileName = tokens.nextToken();
-				get(fileName, os);
+				responseToClient = getOrHead(fileName);
+				os.writeBytes(responseToClient);
+				System.out.println(responseToClient);
+				if(firstToken.equals("GET"))
+				{
+					if(fileExists)
+					{
+						sendBytes(fis, os);
+						fis.close();
+					}
+					else
+					{
+						FileInputStream error = new FileInputStream(ROOT+"error.html");
+						sendBytes(error, os);
+						error.close();
+					}
+				}
 			}
-			if(firstToken.equals("HEAD"))
+			if(firstToken.equals("TRACE"))
 			{
-				String fileName = tokens.nextToken();
-				head(fileName, os);
+				responseToClient = trace(requestLine);
+				os.writeBytes(responseToClient);
+				System.out.println(responseToClient);
+				
 			}
 		}
 		System.out.println(requestLine);
