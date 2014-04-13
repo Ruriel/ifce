@@ -23,8 +23,8 @@ public final class Tomdercat
 
 final class HttpRequest implements Runnable
 {
-	final static String CRLF = "\r\n";
-	final static String ROOT = "C://Users//Ruriel//Dropbox//workspace//ifce//Tomdercat//html//";
+	final static String CRLF = System.getProperty("line.separator");
+	final static String ROOT = ".//html//";
 	Socket socket;
 	boolean fileExists = true;
 	FileInputStream fis = null;
@@ -223,7 +223,6 @@ final class HttpRequest implements Runnable
 				String fileName = tokens.nextToken();
 				responseToClient = getOrHead(fileName);
 				os.writeBytes(responseToClient);
-				System.out.println(responseToClient);
 				if(firstToken.equals("GET"))
 				{
 					if(fileExists)
@@ -243,9 +242,8 @@ final class HttpRequest implements Runnable
 			{
 				responseToClient = trace(requestLine);
 				os.writeBytes(responseToClient);
-				System.out.println(responseToClient);
-				
 			}
+			os.writeBytes(CRLF);
 		}
 		System.out.println(requestLine);
 		while((headerLine = br.readLine()).length() != 0)
