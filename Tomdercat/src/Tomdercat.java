@@ -1,6 +1,5 @@
 import java.io.* ; 
 import java.net.* ; 
-import java.text.DateFormat;
 import java.util.* ;
 
 public final class Tomdercat 
@@ -23,7 +22,7 @@ public final class Tomdercat
 
 final class HttpRequest implements Runnable
 {
-	final static String CRLF = System.getProperty("line.separator");
+	final static String CRLF = "\r\n";
 	final static String ROOT = ".//html//";
 	Socket socket;
 	boolean fileExists = true;
@@ -190,6 +189,23 @@ final class HttpRequest implements Runnable
 		return response;
 	}
 	
+	private String put(String fileName, String body) throws IOException
+	{
+		BufferedWriter br;
+		String response;
+		File file = new File(ROOT+fileName);
+		file.setWritable(true);
+		file.setExecutable(true);
+		if(file.exists() && !file.isDirectory())
+			response = headerResponse(200, fileName);
+		else
+			response = headerResponse(201, fileName);
+		br = new BufferedWriter(new FileWriter(file));
+		br.write(body);
+		br.close();
+		return response;
+	}
+	
 	private String trace(String echo)
 	{
 		String statusLine = status(200);
@@ -209,13 +225,29 @@ final class HttpRequest implements Runnable
 		BufferedReader br = new BufferedReader(isr);
 		
 		String headerLine = null;
-		String requestLine = br.readLine();
+		char buff = '\0';
+		String header = "";
+		String body = "";
+		String request = "";
 		String firstToken = null;
 		String responseToClient = null;
 		StringTokenizer tokens = null;
-		if(requestLine != null)
+		do
 		{
-			tokens = new StringTokenizer(requestLine);
+			buff = (char) br.read();
+			header += buff;
+		}
+		while(!header.endsWith(CRLF+CRLF));
+		do
+		{
+			buff = (char) br.read();
+			body += buff;
+		}
+		while(!body.endsWith(CRLF+CRLF));
+		request = header+body;
+		if(request != null)
+		{
+			tokens = new StringTokenizer(request);
 			
 			firstToken = tokens.nextToken();
 			if(firstToken.equals("GET") || firstToken.equals("HEAD"))
@@ -240,12 +272,18 @@ final class HttpRequest implements Runnable
 			}
 			if(firstToken.equals("TRACE"))
 			{
-				responseToClient = trace(requestLine);
+				responseToClient = trace(request);
+				os.writeBytes(responseToClient);
+			}
+			if(firstToken.equals("PUT"))
+			{
+				String fileName = tokens.nextToken();
+				responseToClient = put(fileName, body);
 				os.writeBytes(responseToClient);
 			}
 			os.writeBytes(CRLF);
 		}
-		System.out.println(requestLine);
+		System.out.println(request);
 		while((headerLine = br.readLine()).length() != 0)
 			System.out.println(headerLine);
 		System.out.println();
@@ -280,7 +318,7 @@ final class HttpRequest implements Runnable
 		}
 		catch(Exception e)
 		{
-			System.out.println(e);
+			e.printStackTrace();
 		}
 		
 	}
