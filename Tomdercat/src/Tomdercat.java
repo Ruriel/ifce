@@ -215,6 +215,17 @@ final class HttpRequest implements Runnable
 		return statusLine+dateLine+serverLine+contentTypeLine+CRLF+echo;
 	}
 	
+	private String delete(String fileName) throws IOException
+	{
+		File file = new File(ROOT+fileName);
+		if(file.exists())
+		{
+			file.delete();
+			return headerResponse(204, fileName);
+		}
+		else
+			return headerResponse(404, "error.html");
+	}
 	private void processRequest() throws Exception
 	{
 		
@@ -281,6 +292,12 @@ final class HttpRequest implements Runnable
 				responseToClient = put(fileName, body);
 				os.writeBytes(responseToClient);
 			}
+			if(firstToken.equals("DELETE"))
+			{
+				String fileName = tokens.nextToken();
+				responseToClient = delete(fileName);
+				os.writeBytes(responseToClient);
+			}
 			os.writeBytes(CRLF);
 		}
 		System.out.println(request);
@@ -291,7 +308,6 @@ final class HttpRequest implements Runnable
 		br.close();
 		socket.close();
 	}
-	
 	
 	private static String contentType(String fileName) {
 		if(fileName.endsWith(".htm") || (fileName.endsWith(".html")))
