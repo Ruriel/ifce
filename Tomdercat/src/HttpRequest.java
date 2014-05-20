@@ -4,12 +4,18 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.Socket;
+import java.net.URLDecoder;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 
@@ -27,7 +33,7 @@ final class HttpRequest implements Runnable
 	String language = "";
 	long contentLength = 0;
 	
-	private String status(int x)
+ 	private String status(int x)
 	{
 		String response = "HTTP/1.1 "+x+" ";
 		switch(x)
@@ -163,7 +169,7 @@ final class HttpRequest implements Runnable
 		String serverLine = "Server: Tomdercat 1.0"+CRLF;
 		String contentTypeLine = "Content type: "+ contentType(fileName) + CRLF;
 		String contentLength = "Content length: "+ contentLength(fileName) + CRLF;
-		return statusLine+dateLine+serverLine+contentLength+contentTypeLine+CRLF;
+		return statusLine+dateLine+serverLine+contentLength+contentTypeLine;
 	}
 	
 	private String getOrHead(String fileName) throws Exception
@@ -186,10 +192,40 @@ final class HttpRequest implements Runnable
 			response = headerResponse(200, fileName);
 		else
 			response = headerResponse(404, "error.html");
-		return response;
+		return response+CRLF;
 	}
 	
-	private String put(String fileName, String body) throws IOException
+	private String formatPage(String body)
+	{
+		ArrayList<String> variables = new ArrayList<String>();
+		ArrayList<String> content = new ArrayList<String>();
+		String[] fileContent;
+		String toFile = "";
+		
+		fileContent = body.split("&");
+		for(int i = 0; i < fileContent.length; i++)
+		{
+			String[] line = fileContent[i].split("=");
+			for(int j = 0; j < line.length; j+=2)
+			{
+				variables.add(line[j]);
+				content.add(line[j+1]);
+			}
+		}
+		for(int k = 0; k < variables.size(); k++)
+		{
+			toFile += variables.get(k).substring(0, 1).toUpperCase() + variables.get(k).substring(1)+": "+"<br>";
+			toFile += content.get(k)+"<br>";
+		}
+		toFile = toFile.replace("%0D%0A", "<br>");
+		toFile = toFile.replace("%40", "@");
+		toFile = toFile.replace("%21", "!");
+		toFile = toFile.replace("+", " ");
+		toFile = toFile.replace("%3F", "?");
+		return toFile;
+	}
+	
+	private String post(String fileName, String body) throws IOException
 	{
 		BufferedWriter br;
 		String response;
@@ -201,12 +237,12 @@ final class HttpRequest implements Runnable
 		else
 			response = headerResponse(201, fileName);
 		br = new BufferedWriter(new FileWriter(file));
-		br.write(body);
+		br.write(formatPage(body));
 		br.close();
-		return response;
+		return response+"Location: "+file.getCanonicalPath()+CRLF;
 	}
 	
-	private String post(String fileName, String body) throws IOException
+	/*private String post(String fileName, String body) throws IOException
 	{
 		BufferedWriter br;
 		String response;
@@ -224,7 +260,7 @@ final class HttpRequest implements Runnable
 		br.write(body);
 		br.close();
 		return response+"Location: "+file.getPath()+file.getName()+CRLF;
-	}
+	}*/
 	
 	private String trace(String echo)
 	{
@@ -241,10 +277,10 @@ final class HttpRequest implements Runnable
 		if(file.exists())
 		{
 			file.delete();
-			return headerResponse(204, fileName);
+			return headerResponse(204, fileName)+CRLF;
 		}
 		else
-			return headerResponse(404, "error.html");
+			return headerResponse(404, "error.html")+CRLF;
 	}
 	
 	private void processVariables(String request)
@@ -256,32 +292,32 @@ final class HttpRequest implements Runnable
 		{
 			try{
 				token = tokens.nextToken();
+				if(token.equals("Host:"))
+				{
+					host = tokens.nextToken();
+				}
+				if(token.equals("User-Agent:"))
+				{
+					userAgent = tokens.nextToken();
+				}
+				if(token.equals("Connection:"))
+				{
+					connection = tokens.nextToken();
+				}
+				if(token.equals("Language:"))
+				{
+					language = tokens.nextToken();
+				}
+				if(token.equals("Content-Length:"))
+				{
+					contentLength = Long.parseLong(tokens.nextToken());
+				}
 			}
 			catch(NoSuchElementException e)
 			{
 				end = true;
 			}
-			if(token.equals("Host:"))
-			{
-				host = tokens.nextToken();
-			}
-			if(token.equals("User-Agent:"))
-			{
-				userAgent = tokens.nextToken();
-			}
-			if(token.equals("Connection:"))
-			{
-				connection = tokens.nextToken();
-			}
-			if(token.equals("Language:"))
-			{
-				language = tokens.nextToken();
-			}
-			if(token.equals("Content-Length:"))
-			{
-				contentLength = Long.parseLong(tokens.nextToken());
-			}
-		}while(!token.endsWith(CRLF+CRLF) && end);
+		}while(!end && tokens.hasMoreTokens());
 	}
 	
 	private void processRequest() throws Exception
@@ -304,7 +340,6 @@ final class HttpRequest implements Runnable
 		{
 			buff = (char) br.read();
 			request += buff;
-			System.out.println(request.endsWith(CRLF+CRLF));
 		}
 		while(!request.endsWith(CRLF+CRLF));
 		
@@ -338,7 +373,7 @@ final class HttpRequest implements Runnable
 				responseToClient = trace(request);
 				os.writeBytes(responseToClient);
 			}
-			if(firstToken.equals("PUT"))
+			/*if(firstToken.equals("PUT"))
 			{
 				String fileName = tokens.nextToken();
 				if(contentLength == 0)
@@ -350,7 +385,7 @@ final class HttpRequest implements Runnable
 					responseToClient = put(fileName, body);
 				}
 				os.writeBytes(responseToClient);
-			}
+			}*/
 			if(firstToken.equals("DELETE"))
 			{
 				String fileName = tokens.nextToken();
@@ -380,30 +415,32 @@ final class HttpRequest implements Runnable
 						body += (char)br.read();
 					responseToClient = post(fileName, body);
 					StringTokenizer getPath = new StringTokenizer(responseToClient);
-					String path;
+					String aux = "";
 					do
 					{
-						path = getPath.nextToken();
+						aux = getPath.nextToken();
 					}
-					while(path.equals("Location:"));
+					while(!aux.equals("Location:"));
 					entity = "<HTML>\n" +
 							"<HEAD>\n" +
 							"<TITLE>File created.</TITLE>\n" +
 							"</HEAD>\n" +
 							"<BODY>\n" +
-							"File created at "+ getPath.nextToken()+"\n"+
+							"File created at "+getPath.nextToken()+"\n"+
 							"</BODY>\n"+
 							"</HTML>";
 				}
-				os.writeBytes(responseToClient);
+				os.writeBytes(responseToClient+CRLF);
 				os.writeBytes(entity);
 			}
 			os.writeBytes(CRLF);
 		}
 		System.out.println(request);
+		System.out.println(body);
 		os.close();
 		br.close();
-		socket.close();
+		if(connection.equals("close"))
+			socket.close();
 	}
 	
 	private static String contentType(String fileName) {
@@ -420,8 +457,11 @@ final class HttpRequest implements Runnable
 
 	private long contentLength(String fileName)
 	{
-		File file = new File(fileName);
-		return file.length();
+		File file = new File(ROOT+fileName);
+		if(file.exists())
+			return file.length();
+		else
+			return 0;
 	}
 	
 	private void sendBytes(FileInputStream fis, DataOutputStream os) throws Exception{
@@ -437,20 +477,15 @@ final class HttpRequest implements Runnable
 	@Override
 	public void run() 
 	{
-		boolean flag = true;
-		while(flag)
+		try
 		{
-			try
-			{
-				processRequest();
-				flag = !connection.equals("close");
-			}
-			catch(Exception e)
-			{
-				e.printStackTrace();
-			}
+			processRequest();
 		}
-		
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+				
 	}
 	
 }
