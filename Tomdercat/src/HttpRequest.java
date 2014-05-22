@@ -206,7 +206,7 @@ final class HttpRequest implements Runnable
 		for(int i = 0; i < fileContent.length; i++)
 		{
 			String[] line = fileContent[i].split("=");
-			for(int j = 0; j < line.length; j+=2)
+			for(int j = 0; j + 1 < line.length; j+=2)
 			{
 				variables.add(line[j]);
 				content.add(line[j+1]);
@@ -426,7 +426,9 @@ final class HttpRequest implements Runnable
 							"<TITLE>File created.</TITLE>\n" +
 							"</HEAD>\n" +
 							"<BODY>\n" +
-							"File created at "+getPath.nextToken()+"\n"+
+							"File created." +
+							"<a href= " +fileName +
+							">Click here</a>\n"+
 							"</BODY>\n"+
 							"</HTML>";
 				}
@@ -436,7 +438,8 @@ final class HttpRequest implements Runnable
 			os.writeBytes(CRLF);
 		}
 		System.out.println(request);
-		System.out.println(body);
+		if(body.length() != 0)
+			System.out.println(body);
 		os.close();
 		br.close();
 		if(connection.equals("close"))
