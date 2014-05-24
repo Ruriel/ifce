@@ -4,35 +4,76 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.Reader;
 import java.net.Socket;
-import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 
+/**
+ * Projeto de Redes. Servidor Web.
+ * @author Ruriel
+ *
+ */
 
+/**
+ * Classe usada para cuidar dos requests do Browser.
+ * @author Ruriel
+ *
+ */
 final class HttpRequest implements Runnable
 {
+	/**
+	 * Carriage Return e Line Feed.
+	 */
 	final static String CRLF = "\r\n";
+	/**
+	 * Diretório raiz das páginas html usadas.
+	 */
 	final static String ROOT = ".//html//";
+	/**
+	 * Conexão a ser recebida pelo servidor Web.
+	 */
 	Socket socket;
+	/**
+	 * Indica se o arquivo pedido está presente ou não.
+	 */
 	boolean fileExists = true;
+	/**
+	 * Arquivo a ser enviado para o usuário.
+	 */
 	FileInputStream fis = null;
+	/**
+	 * Nome do host.
+	 */
 	String host = "";
+	/**
+	 * Nome do agente usuário.
+	 */
 	String userAgent = "";
+	/**
+	 * Tipo de conexão.
+	 */
 	String connection = "close";
+	/**
+	 * Idioma.
+	 */
 	String language = "";
+	/**
+	 * Tamanho do arquivo. Obrigatório ao usar o POST.
+	 */
 	long contentLength = 0;
 	
+	/**
+	 * Retorna uma mensagem de status de acordo com o código especificado na entrada.
+	 * Por exemplo, 404 retornará "Not found."
+	 * @param x Código do status.
+	 * @return String contendo a mensagem e código fornecidos.
+	 */
  	private String status(int x)
 	{
 		String response = "HTTP/1.1 "+x+" ";
@@ -157,11 +198,21 @@ final class HttpRequest implements Runnable
 		}
 		return response+CRLF;
 	}
-	public HttpRequest(Socket socket)
+	/**
+	 * Construtor padrão.
+	 * @param socket Cliente.
+	 */
+ 	public HttpRequest(Socket socket)
 	{
 		this.socket = socket;
 	}
 	
+ 	/**
+ 	 * Retorna uma resposta padrão a requisição do usuário.
+ 	 * @param x Código de status.
+ 	 * @param fileName Arquivo pedido.
+ 	 * @return Status, data, nome do servidor, tipo de conteúdo, etc...
+ 	 */
 	private String headerResponse(int x, String fileName)
 	{
 		String statusLine = status(x);
@@ -169,17 +220,28 @@ final class HttpRequest implements Runnable
 		String serverLine = "Server: Tomdercat 1.0"+CRLF;
 		String contentTypeLine = "Content type: "+ contentType(fileName) + CRLF;
 		String contentLength = "Content length: "+ contentLength(fileName) + CRLF;
-		return statusLine+dateLine+serverLine+contentLength+contentTypeLine;
+		String connectionType = "Connection: "+connection+CRLF;
+		return statusLine+dateLine+serverLine+contentLength+contentTypeLine+connectionType;
 	}
-	
-	private String getOrHead(String fileName) throws Exception
+	/**
+	 * Implementa os métodos GET e HEAD.
+	 * @param fileName Arquivo a ser retornado.
+	 * @return Resposta ao cliente.
+	 */
+	private String getOrHead(String fileName)
 	{
 		String response = null;
+		/**
+		 * Caso o cliente não especifique um arquivo, receberá a página principal.
+		 */
 		if(fileName.equals("/"))
 			fileName = ROOT+"index.html";
 		else
 			fileName = ROOT+fileName;
 	
+		/**
+		 * Tenta abrir uma página. Se não for possível, fileExists se torna falso.
+		 */
 		try
 		{
 			fis = new FileInputStream(fileName);
@@ -188,6 +250,9 @@ final class HttpRequest implements Runnable
 		{
 			fileExists = false;
 		}
+		/**
+		 * Se existir, retorna um código 200. Caso contrário, retorna um código 404.
+		 */
 		if(fileExists)
 			response = headerResponse(200, fileName);
 		else
@@ -195,16 +260,44 @@ final class HttpRequest implements Runnable
 		return response+CRLF;
 	}
 	
+	/**
+	 * Formatação de página usado pelo POST devido a 
+	 * codificação do texto enviado pelo formulário.
+	 * @param body Dados enviados pelo formulário.
+	 * @return Se a página formatada não for uma String vazia, retorne-a.
+	 * Caso contrário, retorna a própria entrada.
+	 */
 	private String formatPage(String body)
 	{
+		/**
+		 * Array de variáveis.
+		 */
 		ArrayList<String> variables = new ArrayList<String>();
+		/**
+		 * Array de conteúdo.
+		 */
 		ArrayList<String> content = new ArrayList<String>();
+		/**
+		 * Lista que conterá o conteúdo enviado pelo usuário.
+		 */
 		String[] fileContent;
+		/**
+		 * String a ser escrita numa página HTML.
+		 */
 		String toFile = "";
 		
+		/**
+		 * Coloca cada String em uma lista separando-as pelo caracter "&".
+		 */
 		fileContent = body.split("&");
+		/**
+		 * Pega o nome das variáveis e do conteúdo.
+		 */
 		for(int i = 0; i < fileContent.length; i++)
 		{
+			/**
+			 * Separa o nome da variável do conteúdo usando o caracter "=".
+			 */
 			String[] line = fileContent[i].split("=");
 			for(int j = 0; j + 1 < line.length; j+=2)
 			{
@@ -212,19 +305,34 @@ final class HttpRequest implements Runnable
 				content.add(line[j+1]);
 			}
 		}
+		/**
+		 * Monta a String a ser colocada no arquivo.
+		 */
 		for(int k = 0; k < variables.size(); k++)
 		{
 			toFile += variables.get(k).substring(0, 1).toUpperCase() + variables.get(k).substring(1)+": "+"<br>";
 			toFile += content.get(k)+"<br>";
 		}
+		/**
+		 * Substitui alguns caracteres da formatação application/x-www-form-urlencoded.
+		 */
 		toFile = toFile.replace("%0D%0A", "<br>");
 		toFile = toFile.replace("%40", "@");
 		toFile = toFile.replace("%21", "!");
 		toFile = toFile.replace("+", " ");
 		toFile = toFile.replace("%3F", "?");
-		return toFile;
+		if(toFile.length() != 0)
+			return toFile;
+		else
+			return body;
 	}
-	
+	/**
+	 * Método POST.
+	 * @param fileName Nome do arquivo a ser postado.
+	 * @param body Conteúdo a ser escrito no arquivo.
+	 * @return Mensagem de reposta de requisição + local do arquivo.
+	 * @throws IOException
+	 */
 	private String post(String fileName, String body) throws IOException
 	{
 		BufferedWriter br;
@@ -232,36 +340,20 @@ final class HttpRequest implements Runnable
 		File file = new File(ROOT+fileName);
 		file.setWritable(true);
 		file.setExecutable(true);
+		br = new BufferedWriter(new FileWriter(file));
+		br.write(formatPage(body));
+		br.close();
 		if(file.exists() && !file.isDirectory())
 			response = headerResponse(200, fileName);
 		else
 			response = headerResponse(201, fileName);
-		br = new BufferedWriter(new FileWriter(file));
-		br.write(formatPage(body));
-		br.close();
 		return response+"Location: "+file.getCanonicalPath()+CRLF;
 	}
-	
-	/*private String post(String fileName, String body) throws IOException
-	{
-		BufferedWriter br;
-		String response;
-		File file = new File(ROOT+fileName);
-		file.setWritable(true);
-		file.setExecutable(true);
-		int id = 1;
-		response = headerResponse(201, fileName);
-		while(file.exists())
-		{
-			file.renameTo(new File(fileName+" (" + id + ")"));
-			id++;
-		}
-		br = new BufferedWriter(new FileWriter(file));
-		br.write(body);
-		br.close();
-		return response+"Location: "+file.getPath()+file.getName()+CRLF;
-	}*/
-	
+	/**
+	 * Método TRACE.
+	 * @param echo Requisição do usuário.
+	 * @return Reposta de requisição + a requisição do usuário.
+	 */
 	private String trace(String echo)
 	{
 		String statusLine = status(200);
@@ -271,6 +363,13 @@ final class HttpRequest implements Runnable
 		return statusLine+dateLine+serverLine+contentTypeLine+CRLF+echo;
 	}
 	
+	/**
+	 * Método DELETE.
+	 * @param fileName Nome do arquivo a ser deletado.
+	 * @return Reposta de requisição de código 204 caso o arquivo tenha sido
+	 * excluido com sucesso ou 404 caso não exista.
+	 * @throws IOException
+	 */
 	private String delete(String fileName) throws IOException
 	{
 		File file = new File(ROOT+fileName);
@@ -282,7 +381,11 @@ final class HttpRequest implements Runnable
 		else
 			return headerResponse(404, "error.html")+CRLF;
 	}
-	
+	/**
+	 * Processa as variáveis digitadas pelo usuário como 
+	 * nome do host, agente, tipo de conexão, etc...
+	 * @param request Requisição do usuário.
+	 */
 	private void processVariables(String request)
 	{
 		StringTokenizer tokens = new StringTokenizer(request);
@@ -319,7 +422,10 @@ final class HttpRequest implements Runnable
 			}
 		}while(!end && tokens.hasMoreTokens());
 	}
-	
+	/**
+	 * Processa a requisição do usuário.
+	 * @throws Exception
+	 */
 	private void processRequest() throws Exception
 	{
 		
@@ -336,6 +442,10 @@ final class HttpRequest implements Runnable
 		String responseToClient = null;
 		StringTokenizer tokens = null;
 		
+		/**
+		 * Fica lendo cada tecla que o usuário digíta até que ele pressione ENTER 
+		 * duas vezes seguidas.
+		 */
 		do
 		{
 			buff = (char) br.read();
@@ -347,12 +457,23 @@ final class HttpRequest implements Runnable
 		{
 			processVariables(request);
 			tokens = new StringTokenizer(request);
+			/**
+			 * Lê a primeira palavra da requisição para saber que método usar.
+			 */
 			firstToken = tokens.nextToken();
+			/**
+			 * Se for GET ou HEAD, realiza os métodos GET ou HEAD e manda a resposta
+			 * para o usuário.
+			 */
 			if(firstToken.equals("GET") || firstToken.equals("HEAD"))
 			{
 				String fileName = tokens.nextToken();
 				responseToClient = getOrHead(fileName);
 				os.writeBytes(responseToClient);
+				/**
+				 * Se o método for GET, retorna o arquivo requisitado caso ele exista ou
+				 * uma página de erro 404.
+				 */
 				if(firstToken.equals("GET"))
 				{
 					if(fileExists)
@@ -368,24 +489,17 @@ final class HttpRequest implements Runnable
 					}
 				}
 			}
+			/**
+			 * Ecoa o conteúdo digitado pelo usuário.
+			 */
 			if(firstToken.equals("TRACE"))
 			{
 				responseToClient = trace(request);
 				os.writeBytes(responseToClient);
 			}
-			/*if(firstToken.equals("PUT"))
-			{
-				String fileName = tokens.nextToken();
-				if(contentLength == 0)
-					responseToClient = status(411);
-				else
-				{
-					for(long i = 0; i < contentLength; i++)
-						body += (char)br.read();
-					responseToClient = put(fileName, body);
-				}
-				os.writeBytes(responseToClient);
-			}*/
+			/**
+			 * Apaga o arquivo requisitado.
+			 */
 			if(firstToken.equals("DELETE"))
 			{
 				String fileName = tokens.nextToken();
@@ -393,6 +507,11 @@ final class HttpRequest implements Runnable
 				os.writeBytes(responseToClient);
 				
 			}
+			/**
+			 * Se a variável contentLength for zero, retorna erro 411. Caso contrário,
+			 * começa a ler cada tecla digitada até chegar ao limite especificado por 
+			 * contentLength.
+			 */
 			if(firstToken.equals("POST"))
 			{
 				String entity;
@@ -414,13 +533,6 @@ final class HttpRequest implements Runnable
 					for(long i = 0; i < contentLength; i++)
 						body += (char)br.read();
 					responseToClient = post(fileName, body);
-					StringTokenizer getPath = new StringTokenizer(responseToClient);
-					String aux = "";
-					do
-					{
-						aux = getPath.nextToken();
-					}
-					while(!aux.equals("Location:"));
 					entity = "<HTML>\n" +
 							"<HEAD>\n" +
 							"<TITLE>File created.</TITLE>\n" +
@@ -437,15 +549,25 @@ final class HttpRequest implements Runnable
 			}
 			os.writeBytes(CRLF);
 		}
+		/**
+		 * Imprime no console a requisição do usuário.
+		 */
 		System.out.println(request);
+		/**
+		 * Exibe o corpo caso ele exista.
+		 */
 		if(body.length() != 0)
 			System.out.println(body);
 		os.close();
 		br.close();
 		if(connection.equals("close"))
-			socket.close();
+			socket.setKeepAlive(false);
 	}
-	
+	/**
+	 * Tipos de conteúdo para cada tipo de arquivo.
+	 * @param fileName Nome do arquivo.
+	 * @return Tipo do conteúdo do arquivo.
+	 */
 	private static String contentType(String fileName) {
 		if(fileName.endsWith(".htm") || (fileName.endsWith(".html")))
 			return "text/html";
@@ -457,7 +579,11 @@ final class HttpRequest implements Runnable
 			return "image/png";
 		return "application/octet-stream";
 	}
-
+	/**
+	 * Tamanho do arquivo.
+	 * @param fileName Nome do arquivo.
+	 * @return O tamanho do arquivo caso ele exista ou zero se não existir.
+	 */
 	private long contentLength(String fileName)
 	{
 		File file = new File(ROOT+fileName);
@@ -466,7 +592,12 @@ final class HttpRequest implements Runnable
 		else
 			return 0;
 	}
-	
+	/**
+	 * Envia arquivo para o usuário byte a byte.
+	 * @param fis Arquivo a ser enviado.
+	 * @param os Saída do servidor.
+	 * @throws Exception
+	 */
 	private void sendBytes(FileInputStream fis, DataOutputStream os) throws Exception{
 		byte[] buffer = new byte[1024];
 		int bytes = 0;
