@@ -40,8 +40,8 @@ public class ControllerPanel
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			jp.aumentarPrioridade(ac.getPrioridade()+1);
-			ac.setPrioridade(ac.getPrioridade()+1);
+			jp.aumentarPrioridade(up.getPriority()+1);
+			up.setPriority(up.getPriority()+1);
 		}
 	}
 	
@@ -51,8 +51,8 @@ public class ControllerPanel
 		@Override
 		public void actionPerformed(ActionEvent e) 
 		{
-			jp.diminuirPrioridade(ac.getPrioridade()-1);
-			ac.setPrioridade(ac.getPrioridade()-1);
+			jp.diminuirPrioridade(up.getPriority()-1);
+			up.setPriority(up.getPriority()-1);
 		}
 		
 	}
@@ -63,8 +63,11 @@ public class ControllerPanel
 		@Override
 		public void actionPerformed(ActionEvent e) 
 		{
-			ac.setPrioridade(Thread.NORM_PRIORITY);
+			up.setPriority(Thread.NORM_PRIORITY);
 			ac.setContador(0);
+			jp.setTextPrioridade(up.getPriority());
+			jp.setTextContador(ac.getContador());
+			jp.enableButtons();
 		}
 		
 	}

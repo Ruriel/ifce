@@ -2,20 +2,11 @@ package Model;
 
 public class Acumulador
 {
-	private int contador = 0;
-	private int prioridade = Thread.NORM_PRIORITY;
+	private int contador;
 	
 	public Acumulador()
 	{
-	}
-	public int getPrioridade()
-	{
-		return prioridade;
-	}
-	
-	public void setPrioridade(int prioridade)
-	{
-		this.prioridade = prioridade;
+		contador = 0;
 	}
 	
 	public int getContador()
@@ -30,6 +21,5 @@ public class Acumulador
 	public void reset()
 	{
 		contador = 0;
-		prioridade = Thread.NORM_PRIORITY;
 	}
 }

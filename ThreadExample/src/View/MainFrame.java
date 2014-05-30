@@ -52,10 +52,10 @@ public class MainFrame extends JFrame
 	public MainFrame()
 	{
 		super();
-		setBounds(100, 100, 500, 300);
+		setBounds(100, 100, 532, 300);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setLayout(null);
-		
+		this.setResizable(false);
 		jpA = new JPanelAcumulador();
 		jpA.setBounds(5, 50, 162, 162);
 		

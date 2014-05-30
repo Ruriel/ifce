@@ -13,7 +13,6 @@ public class Update extends Thread
 	{
 		this.jp = jp;
 		this.ac = ac;
-		setPriority(ac.getPrioridade());
 	}
 	
 	public void parar()
@@ -25,20 +24,12 @@ public class Update extends Thread
 	public void run()
 	{
 		long timeThen;
-		int contador = ac.getContador();
-		int prioridade = getPriority();
 		while(running)
 		{
 			timeThen = System.currentTimeMillis();
 			while(System.currentTimeMillis() - timeThen < 1000){}
-			ac.setContador(contador+1);
-			contador = ac.getContador();
-			jp.refresh(contador);
-			if(prioridade != ac.getPrioridade())
-			{
-				setPriority(ac.getPrioridade());
-				prioridade = getPriority();
-			}
+			ac.setContador(ac.getContador()+1);
+			jp.refresh(ac.getContador());
 		}
 	}
 }
