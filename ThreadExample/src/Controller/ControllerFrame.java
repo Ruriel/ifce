@@ -3,10 +3,21 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import View.MainFrame;
 
-
+/**
+ * Controlador associada à janela principal.
+ * @author Ruriel
+ *
+ */
 public class ControllerFrame
 {
+	/**
+	 * Janela associada a este controlador.
+	 */
 	private MainFrame view;
+	/**
+	 * Construtor. Adiciona os eventos aos botões "Iniciar" e "Parar".
+	 * @param view Janela a ser associada.
+	 */
 	public ControllerFrame(MainFrame view)
 	{
 		this.view = view;
@@ -14,7 +25,11 @@ public class ControllerFrame
 		view.addPararListener(new StopListener());
 	}
 	
-	
+	/**
+	 * Classe usada para o evento do botão "Iniciar".
+	 * @author Ruriel
+	 *
+	 */
 	public class StartListener implements ActionListener
 	{
 
@@ -28,6 +43,11 @@ public class ControllerFrame
 		
 	}
 	
+	/**
+	 * Classe usada para o evento do botão "Parar".
+	 * @author Ruriel
+	 *
+	 */
 	public class StopListener implements ActionListener
 	{
 

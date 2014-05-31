@@ -6,6 +6,11 @@ import javax.swing.JTextField;
 import javax.swing.JLabel;
 import javax.swing.JButton;
 
+/**
+ * Painel que será associado a um Acumulador.
+ * @author Ruriel
+ *
+ */
 @SuppressWarnings("serial")
 public class JPanelAcumulador extends JPanel{
 
@@ -17,40 +22,56 @@ public class JPanelAcumulador extends JPanel{
 	private JButton btnAumentar;
     private JButton btnDiminuir;
 	
-	public JTextField getJtfContador() {
-		return jtfContador;
-	}
-
-
-	public JTextField getJtfPrioridade() {
-		return jtfPrioridade;
-	}
-
-	public void addResetListener(ActionListener reset)
+    /**
+     * Adiciona a ação ao evento do botão "Reset".
+     * @param reset Ação.
+     */
+    public void addResetListener(ActionListener reset)
 	{
 		btnReset.addActionListener(reset);
 	}
 
+    /**
+     * Adiciona a ação ao evento do botão "+".
+     * @param up Ação.
+     */
 	public void addAumentarListener(ActionListener up)
 	{
 		btnAumentar.addActionListener(up);
 	}
 
+	/**
+     * Adiciona a ação ao evento do botão "-".
+     * @param down Ação.
+     */
 	public void addDiminuirListener(ActionListener down)
 	{
 		btnDiminuir.addActionListener(down);
 	}
 	
+	/**
+	 * Atualiza o campo do contador.
+	 * @param x Número a ser colocado no campo.
+	 */
 	public void setTextContador(int x)
     {
     	jtfContador.setText(""+x);
     }
 	
+	/**
+	 * Atualiza o campo da prioridade.
+	 * @param x Número a ser colocado no campo.
+	 */
 	public void setTextPrioridade(int x)
 	{
 		jtfPrioridade.setText(""+x);
 	}
     
+	/**
+	 * Seta a prioridade do campo. Se for igual a MAX_PRIORITY, desabilita o botão "+".
+	 * Caso o botão "-" esteja desabilitado, habilita-o.
+	 * @param prioridade A ser colocada no campo.
+	 */
 	public void aumentarPrioridade(int prioridade)
 	{
 		jtfPrioridade.setText(prioridade+"");
@@ -60,6 +81,11 @@ public class JPanelAcumulador extends JPanel{
 			btnDiminuir.setEnabled(true);
 	}
 	
+	/**
+	 * Seta a prioridade do campo. Se for igual a MIN_PRIORITY, desabilita o botão "-".
+	 * Caso o botão "+" esteja desabilitado, habilita-o.
+	 * @param prioridade A ser colocada no campo.
+	 */
 	public void diminuirPrioridade(int prioridade)
 	{
 		jtfPrioridade.setText(prioridade+"");
@@ -69,6 +95,9 @@ public class JPanelAcumulador extends JPanel{
 			btnAumentar.setEnabled(true);
 	}
 	
+	/**
+	 * Habilita todos os botões do painel.
+	 */
 	public void enableButtons()
 	{
 		btnDiminuir.setEnabled(true);
@@ -76,14 +105,20 @@ public class JPanelAcumulador extends JPanel{
 		btnReset.setEnabled(true);
 	}
 	
+	/**
+	 * Desabilita todos os botões do painel.
+	 */
 	public void disableButtons()
 	{
 		btnDiminuir.setEnabled(false);
 		btnAumentar.setEnabled(false);
 		btnReset.setEnabled(false);
 	}
-    
-
+	
+	/**
+	 * Atualiza o campo do contador.
+	 * @param contador Número a ser colocado no campo.
+	 */
 	public void refresh(int contador)
 	{
 		jtfContador.setText(contador+"");

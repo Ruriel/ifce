@@ -6,12 +6,31 @@ import java.awt.event.ActionListener;
 import Model.Acumulador;
 import View.JPanelAcumulador;
 
+/**
+ * Classe que funciona como um controlador para o painel e o acumulador.
+ * @author Ruriel
+ *
+ */
 public class ControllerPanel
 {
+	/**
+	 * Painel associado a este controlador.
+	 */
 	private JPanelAcumulador jp;
+	/**
+	 * Thread para atualização de tela.
+	 */
 	private Update up = null;
+	/**
+	 * Acumulador associado a este controlador.
+	 */
 	private Acumulador ac;
 	
+	/**
+	 * Construtor. Recebe um painel, instancia um acumulador e adiciona
+	 * os eventos dos botões do painel.
+	 * @param panel
+	 */
 	public ControllerPanel(JPanelAcumulador panel)
 	{
 		jp = panel;
@@ -21,6 +40,9 @@ public class ControllerPanel
 		ac = new Acumulador();
 	}
 	
+	/**
+	 * Instacia a Thread caso esteja nula e a inicia.
+	 */
 	public void iniciar()
 	{
 		if(up == null)
@@ -28,12 +50,20 @@ public class ControllerPanel
 		up.start();
 	}
 	
+	/**
+	 * Mata a Thread e a anula.
+	 */
 	public void parar()
 	{
 		up.parar();
 		up = null;
 	}
 	
+	/**
+	 * Classe usada para o evento do botão "+".
+	 * @author Ruriel
+	 *
+	 */
 	public class UpListener implements ActionListener
 	{
 
@@ -45,6 +75,11 @@ public class ControllerPanel
 		}
 	}
 	
+	/**
+	 * Classe usada para o evento do botão "-".
+	 * @author Ruriel
+	 *
+	 */
 	public class DownListener implements ActionListener
 	{
 
@@ -56,7 +91,11 @@ public class ControllerPanel
 		}
 		
 	}
-	
+	/**
+	 * Classe usada para o evento do botão "Reset".
+	 * @author Ruriel
+	 *
+	 */
 	public class ResetListener implements ActionListener
 	{
 

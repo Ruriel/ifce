@@ -3,7 +3,11 @@ import javax.swing.JFrame;
 import Controller.ControllerFrame;
 import View.MainFrame;
 
-
+/**
+ * Classe que contém o método main.
+ * @author Ruriel
+ *
+ */
 public class Main 
 {
 
